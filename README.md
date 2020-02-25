@@ -16,5 +16,5 @@ https://github.com/bmanojlovic/home-assistant-addons
 
 ## Addons provided by this repository
 
-### [home-assistant-borg-backup][homeassistant-borg-backup]
+### [borg-backup][homeassistant-borg-backup]
 
