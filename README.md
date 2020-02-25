@@ -4,7 +4,7 @@
 
 ## About
 
-addons that i use personaly
+addons that i use personally
 
 ## Installation
 
@@ -16,5 +16,5 @@ https://github.com/bmanojlovic/home-assistant-addons
 
 ## Addons provided by this repository
 
-### [homeassistant-borg-backup][homeassistant-borg-backup]
+### [home-assistant-borg-backup][homeassistant-borg-backup]
 
