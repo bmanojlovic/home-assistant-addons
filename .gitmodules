@@ -1,6 +1,3 @@
 [submodule "home-assistant-borg-backup"]
 	path = home-assistant-borg-backup
 	url = https://github.com/bmanojlovic/home-assistant-borg-backup.git
-[submodule "borg-backup"]
-	path = borg-backup
-	url = https://github.com/bmanojlovic/home-assistant-borg-backup.git
