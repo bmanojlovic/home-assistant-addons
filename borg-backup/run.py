@@ -97,13 +97,9 @@ class BorgBackup:
 
     def _load_config(self) -> BorgConfig:
         try:
-            result = subprocess.run(
-                ['ha', 'config', '--raw-json'], 
-                capture_output=True, 
-                text=True,
-                check=True
-            )
-            options = json.loads(result.stdout)['data']['options']
+            # Read configuration from the standard add-on options file
+            with open('/data/options.json', 'r') as f:
+                options = json.load(f)
             
             config = BorgConfig()
             config.passphrase = options.get('borg_passphrase')
@@ -121,11 +117,11 @@ class BorgBackup:
             self._validate_config(config)
             return config
             
-        except subprocess.CalledProcessError as e:
-            self.logger.error(f"Failed to get config from Home Assistant: {e}")
+        except FileNotFoundError:
+            self.logger.error("Configuration file /data/options.json not found")
             sys.exit(1)
         except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse config JSON: {e}")
+            self.logger.error(f"Failed to parse configuration JSON: {e}")
             sys.exit(1)
         except Exception as e:
             self.logger.error(f"Unexpected error loading config: {e}")
@@ -389,4 +385,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
+#1
