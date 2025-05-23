@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2
+
+### Fixed
+- Fixed configuration validation logic for borg_repo_url vs component parts
+- Improved error handling for configuration loading
+
 ## 1.3.1
 
 ### Changed
