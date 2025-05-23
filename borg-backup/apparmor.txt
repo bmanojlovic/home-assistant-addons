@@ -7,6 +7,12 @@ profile borg-backup flags=(attach_disconnected,mediate_deleted) {
   file,
   signal (send) set=(kill,term,int,hup,cont),
 
+  # Network access for Home Assistant API communication
+  network inet stream,
+  network inet6 stream,
+  network inet dgram,
+  network inet6 dgram,
+
   # S6-Overlay
   /init ix,
   /bin/** ix,

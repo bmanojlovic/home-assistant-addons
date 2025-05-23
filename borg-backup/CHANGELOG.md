@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.3
+
+### Fixed
+- Fixed AppArmor profile to allow network access for Home Assistant API communication
+- Resolved issue where `ha` command was blocked from creating backups due to network restrictions
+
 ## 1.3.2
 
 ### Fixed
