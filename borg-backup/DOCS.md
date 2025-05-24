@@ -1,4 +1,4 @@
-# Borg Backup for Home Assistant
+# Borg Backup
 
 ## Overview
 
@@ -66,13 +66,106 @@ ssh-rsa AAAAB3N... root@local-borg-backup
 [INFO] ************ SNIP **********************
 ```
 
+## System Optimization
+
+The addon automatically detects your system capabilities and optimizes the backup process:
+
+- Detects available CPU cores and memory
+- Uses parallel compression on multi-core systems with sufficient memory
+- Detects storage type (SSD vs HDD) and adjusts accordingly
+- Automatically unpacks and processes nested archives
+
+These optimizations happen automatically without any configuration needed.
+
+## Home Assistant Integration
+
+Borg Backup integrates with Home Assistant by providing several entities that show backup status and information:
+
+### Available Entities
+
+- **sensor.borg_backup_status**: Shows the current status of the backup process
+- **sensor.borg_backup_last**: Timestamp of the last successful backup
+- **sensor.borg_backup_repository**: Information about the Borg repository size and statistics
+- **binary_sensor.borg_backup_available**: Indicates if the Borg repository is accessible
+- **sensor.borg_available_backups**: Shows the number and list of available backups (in restore mode)
+
+### Dashboard Integration
+
+You can add these entities to your Home Assistant dashboard using standard Lovelace cards:
+
+```yaml
+# Entities card
+type: entities
+title: Borg Backup
+entities:
+  - sensor.borg_backup_status
+  - sensor.borg_backup_last
+  - sensor.borg_backup_repository
+  - binary_sensor.borg_backup_available
+```
+
+### Backup Button Card
+
+```yaml
+# Button card for manual backup
+type: button
+name: Create Backup Now
+icon: mdi:backup-restore
+tap_action:
+  action: call-service
+  service: hassio.addon_start
+  service_data:
+    addon: local_borg-backup
+```
+
+### Restore Button Card
+
+```yaml
+# Conditional card for restore
+type: conditional
+conditions:
+  - entity: binary_sensor.borg_backup_available
+    state: "on"
+card:
+  type: button
+  name: Restore Latest Backup
+  icon: mdi:restore
+  tap_action:
+    action: call-service
+    service: hassio.addon_start
+    service_data:
+      addon: local_borg-backup
+      options:
+        RESTORE_MODE: "true"
+```
+
 ## Automation
 
-To schedule regular backups, create an automation in Home Assistant:
+To schedule automatic backups, create an automation in Home Assistant:
+
+### Using the Home Assistant UI:
+1. Go to **Settings** → **Automations & Scenes** → **Automations**
+2. Click the **+ CREATE AUTOMATION** button
+3. Click **Start with an empty automation**
+4. Add a name: `Automatic Borg Backup`
+5. In the **Triggers** section:
+   - Click **+ ADD TRIGGER**
+   - Select **Time** as trigger type
+   - Set the time when you want backups to run (e.g., `02:02:00`)
+6. In the **Actions** section:
+   - Click **+ ADD ACTION**
+   - Select **Call service**
+   - For **Service**, choose `Home Assistant Supervisor: Start add-on`
+   - In **Targets**, select your Borg Backup addon (usually `local_borg-backup`)
+7. Click **SAVE**
+
+### Using YAML configuration:
+Add this to your `configuration.yaml` or create a new automation file:
 
 ```yaml
 automation:
   - alias: "Daily Borg Backup"
+    description: "Run Borg backup daily at 2 AM"
     trigger:
       platform: time
       at: "02:00:00"
@@ -80,6 +173,34 @@ automation:
       service: hassio.addon_start
       data:
         addon: local_borg-backup
+```
+
+**Note**: Replace `local_borg-backup` with your actual addon slug if different. You can find the exact name in the addon URL when viewing it in the Supervisor dashboard.
+
+### Notification Automation
+
+You can also create an automation to notify you when backups complete or fail:
+
+```yaml
+automation:
+  - alias: "Borg Backup Status Notification"
+    description: "Send notification when backup completes or fails"
+    trigger:
+      platform: state
+      entity_id: sensor.borg_backup_status
+      to: 
+        - "completed"
+        - "error"
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Borg Backup {{ trigger.to_state.state }}"
+          message: >
+            {% if trigger.to_state.state == 'completed' %}
+              Backup completed successfully at {{ trigger.to_state.attributes.last_completed }}
+            {% else %}
+              Backup failed: {{ trigger.to_state.attributes.error_message }}
+            {% endif %}
 ```
 
 ## Troubleshooting
@@ -101,4 +222,4 @@ automation:
 
 ## Support
 
-For issues, feature requests, or questions, please use the [GitHub issue tracker](https://github.com/bmanojlovic/home-assistant-borg-backup/issues).
+For issues, feature requests, or questions, please use the [GitHub issue tracker](https://github.com/bmanojlovic/home-assistant-addons/issues).

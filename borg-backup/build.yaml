@@ -7,7 +7,7 @@ build_from:
 labels:
   org.opencontainers.image.title: "Home Assistant Add-on: Borg Backup"
   org.opencontainers.image.description: "Makes backup to remote or local borg repository"
-  org.opencontainers.image.source: "https://github.com/bmanojlovic/home-assistant-borg-backup"
+  org.opencontainers.image.source: "https://github.com/bmanojlovic/home-assistant-addons"
   org.opencontainers.image.licenses: "Apache License 2.0"
 args:
   CLI_VERSION: "4.36.0"

@@ -1,5 +1,47 @@
 # Changelog
 
+## 1.3.20
+
+### Added
+- Added Home Assistant entity integration for native dashboard display
+- Added sensor.borg_backup_status entity to show current backup/restore status
+- Added sensor.borg_backup_last entity to show last successful backup time
+- Added sensor.borg_backup_repository entity with repository statistics
+- Added binary_sensor.borg_backup_available to show repository connectivity
+- Added sensor.borg_available_backups to show available backups in restore mode
+- Added example Lovelace dashboard configurations to documentation
+- Added notification automation example for backup status changes
+
+### Changed
+- Enhanced backup and restore processes with detailed status updates
+- Improved error handling with better status reporting
+- Updated documentation with Home Assistant integration examples
+
+## 1.3.16
+
+### Changed
+- Renamed addon from "borg based backup for home assistant" to "Borg Backup for Home Assistant" for better clarity and consistency
+
+### Fixed
+- Updated README.md automation instructions to remove outdated Almond references
+- Improved automation setup instructions with both UI and YAML methods
+- Clarified modern Home Assistant automation interface steps
+
+### Documentation
+- Enhanced automation section with clearer step-by-step instructions
+- Added both graphical UI and YAML configuration examples
+- Updated README.md for consistency with DOCS.md
+- Added missing encryption section to README.md
+- Standardized configuration examples between both documentation files
+- Added troubleshooting section to README.md
+- Improved clarity on configuration options and SSH key setup
+- Added encryption feature to the feature list
+- Updated issue tracker URL from home-assistant-borg-backup repository to home-assistant-addons repository
+- Corrected support links in both README.md and DOCS.md to point to the main addon repository
+- Updated DOCS.md automation section to match README.md with both UI and YAML examples
+- Added System Optimization section to DOCS.md for consistency
+- Ensured complete consistency between README.md and DOCS.md documentation
+
 ## 1.3.15
 
 ### Fixed
