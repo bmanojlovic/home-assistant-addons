@@ -223,3 +223,8 @@ automation:
 ## Support
 
 For issues, feature requests, or questions, please use the [GitHub issue tracker](https://github.com/bmanojlovic/home-assistant-addons/issues).
+# Borg Backup
+
+This is a symlink to [DOCS.md](DOCS.md) for GitHub repository browsing.
+
+Please see the [DOCS.md](DOCS.md) file for complete documentation.
