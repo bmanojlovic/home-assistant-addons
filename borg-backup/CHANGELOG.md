@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.3.15
+
+### Fixed
+- Fixed repository authentication issues when accessing existing encrypted repositories
+- Added proper validation for repository access and passphrase requirements
+- Added repository repair functionality for corrupted repositories
+- Improved error messages for repository authentication failures
+- Added better handling of encrypted vs unencrypted repository initialization
+
+### Security
+- Enhanced warnings when no passphrase is configured
+- Better validation of repository access credentials
+
+### Added
+- Repository repair functionality for handling corrupted repositories
+- More detailed error messages for troubleshooting repository issues
+
 ## 1.3.14
 
 ### Fixed

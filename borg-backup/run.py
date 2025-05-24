@@ -150,6 +150,13 @@ class BorgBackup:
             user_prefix = f"{config.user}@" if config.user else ""
             config.repo_url = f"{user_prefix}{config.host}:{config.reponame}"
 
+        # Warn about security implications
+        if not config.passphrase:
+            self.logger.warning(
+                "No passphrase configured! Your backups will NOT be encrypted. "
+                "This is a security risk. Please set 'borg_passphrase' in your configuration."
+            )
+
     def _ensure_ssh_key(self):
         """Generate and display SSH key if it doesn't exist."""
         key_path = Path(self.config.ssh_key)
@@ -280,27 +287,110 @@ class BorgBackup:
 
     def init_borg_repo(self):
         """Initialize Borg repository with encryption if it doesn't exist."""
+        # First, try to check if repository exists and is accessible
+        try:
+            cmd = ["borg", "info"]
+            if self.config.debug:
+                cmd.append("--debug")
+            cmd.append(self.config.repo_url)
+
+            result = subprocess.run(cmd, capture_output=True, text=True, env=os.environ)
+
+            if result.returncode == 0:
+                self.logger.info("Repository exists and is accessible")
+                return
+            elif (
+                "passphrase" in result.stderr.lower()
+                or "authentication" in result.stderr.lower()
+            ):
+                if not self.config.passphrase:
+                    raise ValueError(
+                        "Repository exists but requires a passphrase. "
+                        "Please set 'borg_passphrase' in your addon configuration."
+                    )
+                else:
+                    raise ValueError(
+                        "Repository exists but passphrase authentication failed. "
+                        "Please check your 'borg_passphrase' configuration."
+                    )
+            elif "does not exist" in result.stderr.lower() or result.returncode == 2:
+                # Repository doesn't exist, we can initialize it
+                pass
+            else:
+                # Some other error
+                self.logger.warning(f"Repository check failed: {result.stderr}")
+
+        except subprocess.CalledProcessError as e:
+            self.logger.warning(f"Could not check repository status: {e}")
+
+        # Initialize new repository
         config_path = Path(self.config.base_dir) / ".config/borg/security"
 
         if not config_path.exists():
-            self.logger.info("Initializing backup repository with encryption")
-            cmd = ["borg", "init", "--encryption=repokey-blake2"]
+            if self.config.passphrase:
+                self.logger.info("Initializing backup repository with encryption")
+                cmd = ["borg", "init", "--encryption=repokey-blake2"]
+            else:
+                self.logger.warning(
+                    "Initializing backup repository WITHOUT encryption (not recommended)"
+                )
+                cmd = ["borg", "init", "--encryption=none"]
 
             if self.config.debug:
                 cmd.append("--debug")
 
+            cmd.append(self.config.repo_url)
+
             try:
                 subprocess.run(cmd, check=True, env=os.environ)
-                self.logger.info("Repository initialized successfully with encryption")
+                if self.config.passphrase:
+                    self.logger.info(
+                        "Repository initialized successfully with encryption"
+                    )
+                else:
+                    self.logger.warning("Repository initialized without encryption")
             except subprocess.CalledProcessError as e:
                 self.logger.error(f"Failed to initialize repository: {e}")
                 raise
+
+    def repair_repository(self):
+        """Attempt to repair a corrupted repository."""
+        self.logger.warning("Attempting to repair repository...")
+
+        try:
+            cmd = ["borg", "check", "--repair"]
+            if self.config.debug:
+                cmd.append("--debug")
+            cmd.append(self.config.repo_url)
+
+            subprocess.run(cmd, check=True, env=os.environ)
+            self.logger.info("Repository repair completed successfully")
+
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Repository repair failed: {e}")
+            raise
 
     def create_backup(self):
         """Create a new backup with encryption."""
         try:
             # Ensure repository is initialized with encryption
-            self.init_borg_repo()
+            try:
+                self.init_borg_repo()
+            except ValueError as e:
+                self.logger.error(str(e))
+                sys.exit(1)
+            except Exception as e:
+                self.logger.error(f"Repository initialization failed: {e}")
+                # Try to repair if it's a corruption issue
+                if "authentication" in str(e).lower() or "integrity" in str(e).lower():
+                    try:
+                        self.repair_repository()
+                        self.init_borg_repo()
+                    except Exception as repair_error:
+                        self.logger.error(f"Repository repair failed: {repair_error}")
+                        sys.exit(1)
+                else:
+                    sys.exit(1)
 
             backup_time = (
                 subprocess.check_output(["date", "+%Y-%m-%d-%H:%M"]).decode().strip()
