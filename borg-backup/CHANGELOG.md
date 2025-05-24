@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.9
+
+### Fixed
+- Fixed environment variable access by implementing proper S6 overlay service structure
+- Added S6 service scripts to properly pass SUPERVISOR_TOKEN and HASSIO_TOKEN to Python process
+- Resolved issue where tokens were available in Docker but not accessible to the application
+
 ## 1.3.8
 
 ### Fixed

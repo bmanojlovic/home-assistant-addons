@@ -1,0 +1,16 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Home Assistant Add-on: Borg Backup
+# Runs the Borg Backup service
+# ==============================================================================
+
+# Export environment variables that might be filtered by S6
+export SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN:-}"
+export HASSIO_TOKEN="${HASSIO_TOKEN:-}"
+
+bashio::log.info "Starting Borg Backup..."
+bashio::log.debug "SUPERVISOR_TOKEN available: $([ -n "${SUPERVISOR_TOKEN}" ] && echo "true" || echo "false")"
+bashio::log.debug "HASSIO_TOKEN available: $([ -n "${HASSIO_TOKEN}" ] && echo "true" || echo "false")"
+
+# Run the Python script
+exec python3 /run.py

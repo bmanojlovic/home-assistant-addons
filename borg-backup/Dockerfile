@@ -30,6 +30,7 @@ RUN curl -Lso /usr/bin/ha \
 
 # Copy required data for add-on
 COPY run.py /
+COPY rootfs /
 RUN chmod a+x /run.py
 
-CMD [ "python3", "/run.py" ]
+CMD []

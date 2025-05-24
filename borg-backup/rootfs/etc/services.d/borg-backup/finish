@@ -1,0 +1,13 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Home Assistant Add-on: Borg Backup
+# Take down the S6 supervision tree when the service fails
+# ==============================================================================
+
+bashio::log.info "Borg Backup service finished"
+if [[ "${1}" -ne 0 ]] && [[ "${1}" -ne 256 ]]; then
+  bashio::log.warning "Borg Backup exited with code ${1}"
+fi
+
+# Bring down the entire supervision tree
+exec /run/s6/basedir/bin/halt
