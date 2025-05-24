@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.10
+
+### Fixed
+- Fixed S6 overlay initialization by setting init: false to properly use S6 service structure
+- Resolved "can only run as pid 1" error with S6 overlay suexec
+
 ## 1.3.9
 
 ### Fixed
