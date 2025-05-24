@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.11
+
+### Fixed
+- Fixed S6 service script permissions by adding execute permissions to run and finish scripts
+- Resolved "Permission denied" error when S6 tries to spawn the service
+
 ## 1.3.10
 
 ### Fixed
