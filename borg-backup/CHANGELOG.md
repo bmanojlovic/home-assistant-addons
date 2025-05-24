@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.12
+
+### Changed
+- Updated base images to use Python 3.13 with Alpine 3.21 for latest security patches and performance improvements
+- Upgraded from Alpine 3.18 to Alpine 3.21 for better compatibility and security
+
 ## 1.3.11
 
 ### Fixed

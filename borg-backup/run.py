@@ -328,72 +328,85 @@ class BorgBackup:
             # Try both available tokens
             supervisor_token = os.environ.get("SUPERVISOR_TOKEN")
             hassio_token = os.environ.get("HASSIO_TOKEN")
-            
+
             self.logger.debug(f"SUPERVISOR_TOKEN available: {bool(supervisor_token)}")
             self.logger.debug(f"HASSIO_TOKEN available: {bool(hassio_token)}")
-            
+
             # Try SUPERVISOR_TOKEN first, then HASSIO_TOKEN
-            for token_name, token_value in [("SUPERVISOR_TOKEN", supervisor_token), ("HASSIO_TOKEN", hassio_token)]:
+            for token_name, token_value in [
+                ("SUPERVISOR_TOKEN", supervisor_token),
+                ("HASSIO_TOKEN", hassio_token),
+            ]:
                 if token_value:
                     self.logger.debug(f"Trying API call with {token_name}")
                     try:
                         headers = {
                             "Authorization": f"Bearer {token_value}",
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
                         }
-                        
+
                         backup_data = {
                             "name": f"borg-{backup_time}",
-                            "compressed": True
+                            "compressed": True,
                         }
-                        
+
                         response = requests.post(
                             "http://supervisor/backups/new/full",
                             headers=headers,
                             json=backup_data,
-                            timeout=300
+                            timeout=300,
                         )
-                        
-                        self.logger.debug(f"API response status: {response.status_code}")
-                        
+
+                        self.logger.debug(
+                            f"API response status: {response.status_code}"
+                        )
+
                         if response.status_code == 200:
                             data = response.json()
                             if data["result"] == "ok":
-                                self.logger.info(f"Backup created successfully using {token_name}")
+                                self.logger.info(
+                                    f"Backup created successfully using {token_name}"
+                                )
                                 return data["data"]
                             else:
-                                self.logger.error(f"API returned error with {token_name}: {data}")
+                                self.logger.error(
+                                    f"API returned error with {token_name}: {data}"
+                                )
                         else:
-                            self.logger.warning(f"API request failed with {token_name}, status {response.status_code}: {response.text}")
+                            self.logger.warning(
+                                f"API request failed with {token_name}, status {response.status_code}: {response.text}"
+                            )
                             continue  # Try next token
-                            
+
                     except requests.RequestException as e:
                         self.logger.warning(f"Request failed with {token_name}: {e}")
                         continue  # Try next token
-            
+
             # If API calls failed, try ha command with environment tokens
             self.logger.warning("API calls failed, trying ha command")
             env = os.environ.copy()
-            
+
             result = subprocess.run(
                 ["ha", "backup", "new", "--name", f"borg-{backup_time}", "--raw-json"],
                 capture_output=True,
                 text=True,
                 check=True,
-                env=env
+                env=env,
             )
             data = json.loads(result.stdout)
-            
+
             if data["result"] != "ok":
                 raise RuntimeError("Failed to create Home Assistant backup")
-                
+
             return data["data"]
 
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Failed to create Home Assistant backup: {e}")
             if e.stderr:
                 self.logger.error(f"Error output: {e.stderr}")
-            self.logger.debug(f"Available environment variables: {list(os.environ.keys())}")
+            self.logger.debug(
+                f"Available environment variables: {list(os.environ.keys())}"
+            )
             raise
         except json.JSONDecodeError as e:
             self.logger.error(f"Failed to parse backup creation response: {e}")
@@ -462,25 +475,32 @@ class BorgBackup:
         try:
             supervisor_token = os.environ.get("SUPERVISOR_TOKEN")
             hassio_token = os.environ.get("HASSIO_TOKEN")
-            
+
             # Try both tokens for API access
-            for token_name, token_value in [("SUPERVISOR_TOKEN", supervisor_token), ("HASSIO_TOKEN", hassio_token)]:
+            for token_name, token_value in [
+                ("SUPERVISOR_TOKEN", supervisor_token),
+                ("HASSIO_TOKEN", hassio_token),
+            ]:
                 if token_value:
                     try:
                         headers = {
                             "Authorization": f"Bearer {token_value}",
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
                         }
-                        
+
                         # Get list of backups
-                        response = requests.get("http://supervisor/backups", headers=headers)
+                        response = requests.get(
+                            "http://supervisor/backups", headers=headers
+                        )
                         if response.status_code != 200:
-                            self.logger.warning(f"Failed to get backup list with {token_name}: {response.status_code}")
+                            self.logger.warning(
+                                f"Failed to get backup list with {token_name}: {response.status_code}"
+                            )
                             continue
-                        
+
                         data = response.json()
                         backups = data["data"]["backups"]
-                        
+
                         # Sort backups by date and get ones to remove
                         backups.sort(key=lambda x: x["date"])
                         to_remove = (
@@ -488,37 +508,44 @@ class BorgBackup:
                             if len(backups) > self.config.keep_snapshots
                             else []
                         )
-                        
+
                         # Remove old backups
                         for backup in to_remove:
-                            self.logger.info(f"Removing backup {backup['name']} ({backup['slug']})")
-                            response = requests.delete(f"http://supervisor/backups/{backup['slug']}", headers=headers)
+                            self.logger.info(
+                                f"Removing backup {backup['name']} ({backup['slug']})"
+                            )
+                            response = requests.delete(
+                                f"http://supervisor/backups/{backup['slug']}",
+                                headers=headers,
+                            )
                             if response.status_code != 200:
-                                self.logger.error(f"Failed to remove backup {backup['slug']}: {response.status_code}")
-                        
+                                self.logger.error(
+                                    f"Failed to remove backup {backup['slug']}: {response.status_code}"
+                                )
+
                         return  # Success, exit function
-                        
+
                     except requests.RequestException as e:
                         self.logger.warning(f"Cleanup failed with {token_name}: {e}")
                         continue
-            
+
             # Fallback to ha commands if API calls failed
             self.logger.warning("API cleanup failed, using ha command fallback")
             env = os.environ.copy()
-            
+
             subprocess.run(["ha", "backup", "reload"], check=True, env=env)
-            
+
             result = subprocess.run(
                 ["ha", "backup", "--raw-json"],
                 capture_output=True,
                 text=True,
                 check=True,
-                env=env
+                env=env,
             )
-            
+
             data = json.loads(result.stdout)
             backups = data["data"]["backups"]
-            
+
             # Sort backups by date and get ones to remove
             backups.sort(key=lambda x: x["date"])
             to_remove = (
@@ -526,12 +553,14 @@ class BorgBackup:
                 if len(backups) > self.config.keep_snapshots
                 else []
             )
-            
+
             # Remove old backups
             for backup in to_remove:
                 self.logger.info(f"Removing backup {backup['name']} ({backup['slug']})")
-                subprocess.run(["ha", "backup", "remove", backup["slug"]], check=True, env=env)
-                
+                subprocess.run(
+                    ["ha", "backup", "remove", backup["slug"]], check=True, env=env
+                )
+
         except Exception as e:
             self.logger.error(f"Failed to cleanup old backups: {e}")
             raise
