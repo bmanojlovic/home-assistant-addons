@@ -18,7 +18,8 @@ RUN apk add --no-cache \
         py3-pip \
 	py3-psutil \
     && pip3 install --no-cache-dir \
-        psutil
+        psutil \
+        requests
 
 # Home Assistant CLI
 ARG BUILD_ARCH

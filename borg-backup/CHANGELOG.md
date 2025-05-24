@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.7
+
+### Fixed
+- Fixed Supervisor API authentication by using direct HTTP API calls instead of ha command
+- Added fallback to ha command when SUPERVISOR_TOKEN is not available
+- Improved error handling for API communication issues
+
 ## 1.3.6
 
 ### Fixed
