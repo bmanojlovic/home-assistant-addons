@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.8
+
+### Fixed
+- Fixed API authentication by trying both SUPERVISOR_TOKEN and HASSIO_TOKEN
+- Added better debugging for API token issues
+- Improved error handling with fallback mechanisms for backup creation and cleanup
+
 ## 1.3.7
 
 ### Fixed
