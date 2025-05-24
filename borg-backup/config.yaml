@@ -1,5 +1,5 @@
 name: "Borg Backup for Home Assistant"
-version: "1.3.5"
+version: "1.3.6"
 slug: "borg-backup"
 description: "Secure and efficient backup solution using Borg Backup"
 url: "https://github.com/bmanojlovic/home-assistant-borg-backup/"
@@ -13,7 +13,7 @@ arch:
   - i386
 startup: "services"
 boot: "manual"
-hassio_role: "backup"
+hassio_role: "manager"
 hassio_api: true
 homeassistant_api: true
 auth_api: true

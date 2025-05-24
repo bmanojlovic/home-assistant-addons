@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.6
+
+### Fixed
+- Fixed SUPERVISOR_TOKEN environment variable access by updating hassio_role to manager
+- Improved error handling for missing environment variables
+- Added debug logging for troubleshooting API access issues
+
 ## 1.3.5
 
 ### Added

@@ -324,14 +324,13 @@ class BorgBackup:
 
     def _create_ha_backup(self, backup_time: str) -> Dict[str, Any]:
         try:
-            # Get the supervisor token from environment
+            # Try to get the supervisor token from environment
             supervisor_token = os.environ.get("SUPERVISOR_TOKEN")
-            if not supervisor_token:
-                raise RuntimeError("SUPERVISOR_TOKEN environment variable not found")
 
-            # Set the token as an environment variable for the ha command
+            # Set up environment for ha command
             env = os.environ.copy()
-            env["SUPERVISOR_TOKEN"] = supervisor_token
+            if supervisor_token:
+                env["SUPERVISOR_TOKEN"] = supervisor_token
 
             result = subprocess.run(
                 ["ha", "backup", "new", "--name", f"borg-{backup_time}", "--raw-json"],
@@ -351,6 +350,10 @@ class BorgBackup:
             self.logger.error(f"Failed to create Home Assistant backup: {e}")
             if e.stderr:
                 self.logger.error(f"Error output: {e.stderr}")
+            # Log environment info for debugging
+            self.logger.debug(
+                f"Available environment variables: {list(os.environ.keys())}"
+            )
             raise
         except json.JSONDecodeError as e:
             self.logger.error(f"Failed to parse backup creation response: {e}")
@@ -414,14 +417,13 @@ class BorgBackup:
 
     def _cleanup_old_backups(self):
         try:
-            # Get the supervisor token from environment
+            # Try to get the supervisor token from environment
             supervisor_token = os.environ.get("SUPERVISOR_TOKEN")
-            if not supervisor_token:
-                raise RuntimeError("SUPERVISOR_TOKEN environment variable not found")
 
-            # Set the token as an environment variable for the ha command
+            # Set up environment for ha command
             env = os.environ.copy()
-            env["SUPERVISOR_TOKEN"] = supervisor_token
+            if supervisor_token:
+                env["SUPERVISOR_TOKEN"] = supervisor_token
 
             # Reload backup list
             subprocess.run(["ha", "backup", "reload"], check=True, env=env)
