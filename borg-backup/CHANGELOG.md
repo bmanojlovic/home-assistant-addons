@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.5
+
+### Added
+- Added SSH key thumbprint display when using existing SSH key for verification
+- Shows fingerprint of existing SSH key on addon startup for easy identification
+
+## 1.3.4
+
+### Fixed
+- Fixed Home Assistant API authentication by properly passing SUPERVISOR_TOKEN to `ha` command
+- Resolved "No API token provided" error when creating and managing backups
+
 ## 1.3.3
 
 ### Fixed
