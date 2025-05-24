@@ -28,7 +28,7 @@ RUN curl -Lso /usr/bin/ha \
     && chmod a+x /usr/bin/ha 
 
 # Copy required data for add-on
-COPY run.py /
+COPY run.py backup.py restore.py common.py /
 COPY rootfs /
 RUN chmod a+x /run.py \
     && chmod a+x /etc/services.d/borg-backup/run \
