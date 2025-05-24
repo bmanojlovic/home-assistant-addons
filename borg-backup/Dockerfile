@@ -6,10 +6,9 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Setup base
 ENV LANG=C.UTF-8
-ENV BORG_VERSION=1.2.7-r0
 
 RUN apk add --no-cache \
-        borgbackup=${BORG_VERSION} \
+        borgbackup \
         openssh-keygen \
         openssh-client \
         jq \

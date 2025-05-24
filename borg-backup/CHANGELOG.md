@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.13
+
+### Fixed
+- Removed forced BorgBackup version specification to use distribution default version
+- Fixed build failures caused by version conflicts with Alpine package repository
+- Now uses latest available BorgBackup version from Alpine Linux package manager
+
 ## 1.3.12
 
 ### Changed
