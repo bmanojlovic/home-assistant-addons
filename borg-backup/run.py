@@ -460,7 +460,13 @@ class BorgBackup:
         for pattern in standard_excludes:
             cmd.extend(["--exclude", pattern])
 
-        cmd.extend([f"::{backup_time}", f"{self.config.backup_dir}/{snap_slug}"])
+        # Include repository URL in the archive specification
+        cmd.extend(
+            [
+                f"{self.config.repo_url}::{backup_time}",
+                f"{self.config.backup_dir}/{snap_slug}",
+            ]
+        )
 
         if self.config.debug:
             cmd.insert(1, "--debug")

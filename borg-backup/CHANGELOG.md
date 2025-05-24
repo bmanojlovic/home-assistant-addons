@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.14
+
+### Fixed
+- Fixed AppArmor profile to allow netlink raw socket creation for network operations
+- Added missing network capabilities (net_raw, net_admin) to AppArmor profile
+- Fixed Borg archive command format by including repository URL in archive specification
+- Resolved "Invalid location format" error in Borg create command
+
+### Security
+- Enhanced AppArmor profile with proper network access permissions while maintaining security
+
 ## 1.3.13
 
 ### Fixed
