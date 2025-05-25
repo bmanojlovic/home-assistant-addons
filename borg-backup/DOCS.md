@@ -136,8 +136,71 @@ card:
     service_data:
       addon: local_borg-backup
       options:
-        RESTORE_MODE: "true"
+        restore_mode: true
 ```
+
+You can also configure restore options directly in the addon configuration UI:
+
+1. Go to **Settings** → **Add-ons** → **Borg Backup**
+2. Scroll down to the **Restore settings** section
+3. Toggle **Restore Mode** to enable restore functionality
+4. Optionally specify a backup name or index number
+5. Click **SAVE** and then **START**
+
+### Advanced Dashboard Configuration
+
+For a more comprehensive GUI-like experience, this addon includes a complete dashboard configuration. The configuration creates:
+
+1. **Input helpers** for selecting backup actions
+2. **Scripts** for executing the selected actions
+3. **Automations** that guide users through the restore process
+4. **Dashboard cards** that combine everything into a user-friendly interface
+
+To use this configuration:
+
+1. Copy the contents of the `dashboard.yaml` file from the addon directory
+2. Add the input helpers and scripts to your Home Assistant configuration
+3. Add the dashboard card to your Lovelace dashboard
+
+The dashboard provides:
+- Status monitoring
+- Backup creation
+- Restore options (latest or specific backup)
+- A wizard-like interface for selecting backups to restore
+
+Example dashboard card:
+
+```yaml
+type: vertical-stack
+title: Borg Backup Management
+cards:
+  # Status display
+  - type: entities
+    title: Backup Status
+    entities:
+      - sensor.borg_backup_status
+      - sensor.borg_backup_last
+      - sensor.borg_backup_repository
+      - binary_sensor.borg_backup_available
+
+  # Action selection with input helpers
+  - type: entities
+    title: Backup Actions
+    entities:
+      - input_select.borg_backup_action
+      - input_text.borg_backup_name
+      - input_number.borg_backup_index
+
+  # Execute button
+  - type: button
+    name: Execute Action
+    icon: mdi:play
+    tap_action:
+      action: call-service
+      service: script.borg_backup_execute
+```
+
+See the `dashboard.yaml` file for the complete configuration.
 
 ## Automation
 

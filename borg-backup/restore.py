@@ -261,8 +261,17 @@ class BorgRestore(BorgCommon):
 
     def _select_backup_to_restore(self, backups: List[Dict[str, Any]]) -> Optional[str]:
         """Select which backup to restore."""
-        # Check if BACKUP_NAME environment variable is set
-        backup_name = os.environ.get("BACKUP_NAME")
+        # Try to get backup name from options.json first, then fall back to environment variables
+        try:
+            with open("/data/options.json", "r") as f:
+                options = json.load(f)
+                backup_name = options.get("backup_name", "")
+        except Exception:
+            backup_name = ""
+
+        # If not in options, check environment variable (for backward compatibility)
+        if not backup_name:
+            backup_name = os.environ.get("BACKUP_NAME", "")
 
         if backup_name:
             self.logger.info(f"Using specified backup name: {backup_name}")
@@ -276,8 +285,19 @@ class BorgRestore(BorgCommon):
             )
             return None
 
-        # Check if BACKUP_INDEX environment variable is set
-        backup_index = os.environ.get("BACKUP_INDEX")
+        # Try to get backup index from options.json first, then fall back to environment variables
+        try:
+            with open("/data/options.json", "r") as f:
+                options = json.load(f)
+                backup_index_str = str(options.get("backup_index", ""))
+        except Exception:
+            backup_index_str = ""
+
+        # If not in options, check environment variable (for backward compatibility)
+        if not backup_index_str:
+            backup_index_str = os.environ.get("BACKUP_INDEX", "")
+
+        backup_index = backup_index_str
 
         if backup_index:
             try:

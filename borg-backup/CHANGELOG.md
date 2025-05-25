@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.3.22
+
+### Added
+- Added restore settings to the main configuration UI
+- Added restore_mode toggle in addon configuration
+- Added backup_name and backup_index fields to configuration schema
+- Improved restore UX by allowing configuration through the UI instead of environment variables
+
+### Changed
+- Updated documentation to reflect the new UI-based restore configuration
+- Updated dashboard examples to use the new configuration options
+- Improved backward compatibility with existing environment variable approach
+
+## 1.3.21
+
+### Added
+- Added comprehensive dashboard.yaml with complete GUI-like interface configuration
+- Added input helpers, scripts, and automations for a wizard-like backup experience
+- Added enhanced schema with better UI elements (password field, dropdown lists)
+- Added detailed documentation for the new dashboard configuration
+
+### Changed
+- Improved addon configuration schema with better field types and organization
+- Enhanced documentation with advanced dashboard integration examples
+- Updated configuration options to use proper UI elements (password field, dropdown)
+
 ## 1.3.20
 
 ### Added

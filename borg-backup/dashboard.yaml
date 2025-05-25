@@ -1,0 +1,139 @@
+# Borg Backup Dashboard Configuration
+# Copy these sections to your Home Assistant configuration or dashboard
+
+# Input helpers for the backup interface
+input_select:
+  borg_backup_action:
+    name: "Borg Backup Action"
+    options:
+      - "Create Backup"
+      - "Restore Latest"
+      - "Restore Specific"
+    icon: mdi:backup-restore
+    initial: "Create Backup"
+
+input_text:
+  borg_backup_name:
+    name: "Backup Name to Restore"
+    icon: mdi:backup-restore
+
+input_number:
+  borg_backup_index:
+    name: "Backup Index"
+    min: 1
+    max: 50
+    step: 1
+    icon: mdi:numeric
+    initial: 1
+
+# Script to execute the selected backup action
+script:
+  borg_backup_execute:
+    alias: "Execute Borg Backup Action"
+    icon: mdi:play
+    sequence:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_select.borg_backup_action
+                state: "Create Backup"
+            sequence:
+              - service: hassio.addon_start
+                data:
+                  addon: local_borg-backup
+          
+          - conditions:
+              - condition: state
+                entity_id: input_select.borg_backup_action
+                state: "Restore Latest"
+            sequence:
+              - service: hassio.addon_start
+                data:
+                  addon: local_borg-backup
+                  options:
+                    restore_mode: true
+          
+          - conditions:
+              - condition: state
+                entity_id: input_select.borg_backup_action
+                state: "Restore Specific"
+            sequence:
+              - service: hassio.addon_start
+                data:
+                  addon: local_borg-backup
+                  options:
+                    restore_mode: true
+                    backup_name: "{{ states('input_text.borg_backup_name') }}"
+                    backup_index: "{{ states('input_number.borg_backup_index') | int }}"
+
+# Automation to show available backups when "Restore Specific" is selected
+automation:
+  - alias: "Borg Backup Wizard - Show Available Backups"
+    trigger:
+      platform: state
+      entity_id: input_select.borg_backup_action
+      to: "Restore Specific"
+    action:
+      - service: persistent_notification.create
+        data:
+          title: "Available Backups"
+          message: >
+            Available backups: {{ state_attr('sensor.borg_available_backups', 'backup_list') | join(', ') }}
+            
+            Enter the backup name in the "Backup Name" field or use the index number.
+          notification_id: "borg_backup_list"
+
+# Dashboard card configuration
+# Add this to your Lovelace dashboard
+dashboard_card:
+  type: vertical-stack
+  title: Borg Backup Management
+  cards:
+    # Status display
+    - type: entities
+      title: Backup Status
+      entities:
+        - sensor.borg_backup_status
+        - sensor.borg_backup_last
+        - sensor.borg_backup_repository
+        - binary_sensor.borg_backup_available
+        - sensor.borg_available_backups
+
+    # Action selection
+    - type: entities
+      title: Backup Actions
+      entities:
+        - input_select.borg_backup_action
+        - input_text.borg_backup_name
+        - input_number.borg_backup_index
+
+    # Execute button
+    - type: button
+      name: Execute Action
+      icon: mdi:play
+      tap_action:
+        action: call-service
+        service: script.borg_backup_execute
+
+    # Quick actions
+    - type: horizontal-stack
+      cards:
+        - type: button
+          name: Backup Now
+          icon: mdi:backup-restore
+          tap_action:
+            action: call-service
+            service: hassio.addon_start
+            service_data:
+              addon: local_borg-backup
+        
+        - type: button
+          name: Restore Latest
+          icon: mdi:restore
+          tap_action:
+            action: call-service
+            service: hassio.addon_start
+            service_data:
+              addon: local_borg-backup
+              options:
+                restore_mode: true
