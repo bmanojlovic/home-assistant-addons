@@ -77,6 +77,7 @@ class BorgBackup(BorgCommon):
             # Ensure repository is initialized with encryption
             try:
                 self.init_borg_repo()
+                self.publish_ssh_host_key()
                 # Update availability status
                 self.publish_entity(
                     "binary_sensor.borg_backup_available",
@@ -191,16 +192,41 @@ class BorgBackup(BorgCommon):
             )
 
     def _publish_error_status(self, error_message: str):
-        """Publish error status."""
+        """Publish error status with classified error type."""
+        error_type = self._classify_error(error_message)
         self.publish_entity(
             "sensor.borg_backup_status",
             "error",
-            {"error_message": error_message, "last_error": datetime.now().isoformat()},
+            {
+                "error_message": error_message,
+                "error_type": error_type,
+                "last_error": datetime.now().isoformat(),
+            },
         )
 
         self.publish_entity(
             "binary_sensor.borg_backup_available", "off", {"last_error": error_message}
         )
+
+    @staticmethod
+    def _classify_error(msg: str) -> str:
+        """Classify error message into a category for dashboard use."""
+        m = msg.lower()
+        patterns = {
+            "disk_full": ["no space left", "quota", "repository full", "insufficient storage"],
+            "repo_not_found": ["does not exist", "not a valid repository", "no repository"],
+            "auth_failed": ["passphrase", "authentication failed"],
+            "connection_failed": [
+                "host key verification", "connection refused", "connection closed",
+                "no route to host", "name or service not known", "network is unreachable",
+            ],
+            "api_error": ["api", "status 4", "status 5", "supervisor"],
+            "lock_timeout": ["lock", "locked"],
+        }
+        for error_type, keywords in patterns.items():
+            if any(kw in m for kw in keywords):
+                return error_type
+        return "unknown"
 
     def _create_ha_backup(self, backup_time: str) -> Dict[str, Any]:
         """Create a Home Assistant backup using the Supervisor API."""
@@ -218,6 +244,7 @@ class BorgBackup(BorgCommon):
 
     def _create_backup_via_api(self, backup_time: str) -> Dict[str, Any]:
         """Create backup using the Supervisor API."""
+        last_error = None
         # Try both available tokens
         for token_name, token_value in [
             ("SUPERVISOR_TOKEN", os.environ.get("SUPERVISOR_TOKEN")),
@@ -255,17 +282,21 @@ class BorgBackup(BorgCommon):
                         )
                         return data["data"]
                     else:
-                        self.logger.error(
-                            f"API returned error with {token_name}: {data}"
+                        last_error = (
+                            f"Supervisor API returned error: {data}"
                         )
+                        self.logger.error(last_error)
                 else:
-                    self.logger.warning(
-                        f"API request failed with {token_name}, status {response.status_code}: {response.text}"
+                    last_error = (
+                        f"Supervisor API returned status {response.status_code}: "
+                        f"{response.text[:500]}"
                     )
+                    self.logger.warning(last_error)
             except requests.RequestException as e:
-                self.logger.warning(f"Request failed with {token_name}: {e}")
+                last_error = f"Request failed with {token_name}: {e}"
+                self.logger.warning(last_error)
 
-        raise RuntimeError("All API authentication methods failed")
+        raise RuntimeError(last_error or "No API authentication tokens available")
 
     def unpack_backup(self, snap_slug: str) -> None:
         """Unpack a Home Assistant backup for processing by Borg."""
@@ -385,8 +416,16 @@ class BorgBackup(BorgCommon):
             cmd.insert(1, "--debug")
 
         try:
-            subprocess.run(cmd, check=True)
-        except subprocess.CalledProcessError as e:
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                stderr_msg = result.stderr.strip() if result.stderr else "no details"
+                self.logger.error(f"Borg backup creation failed: {stderr_msg}")
+                raise RuntimeError(
+                    f"borg create failed (exit {result.returncode}): {stderr_msg[:500]}"
+                )
+        except RuntimeError:
+            raise
+        except Exception as e:
             self.logger.error(f"Borg backup creation failed: {e}")
             raise
 

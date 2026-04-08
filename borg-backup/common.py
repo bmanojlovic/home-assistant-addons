@@ -239,7 +239,11 @@ class BorgCommon:
             os.environ.pop("BORG_PASSPHRASE", None)
 
         # Set up SSH configuration with additional parameters
-        ssh_cmd = f"ssh -o UserKnownHostsFile={self.config.ssh_known_hosts} -i {self.config.ssh_key}"
+        ssh_cmd = (
+            f"ssh -o StrictHostKeyChecking=accept-new"
+            f" -o UserKnownHostsFile={self.config.ssh_known_hosts}"
+            f" -i {self.config.ssh_key}"
+        )
         if self.config.ssh_params:
             ssh_cmd = f"{ssh_cmd} {self.config.ssh_params}"
         os.environ["BORG_RSH"] = ssh_cmd
@@ -270,14 +274,47 @@ class BorgCommon:
             cmd.append(self.config.repo_url)
 
             result = subprocess.run(cmd, capture_output=True, text=True, env=os.environ)
+            stderr_lower = result.stderr.lower()
 
             if result.returncode == 0:
                 self.logger.info("Repository exists and is accessible")
                 return True
-            elif (
-                "passphrase" in result.stderr.lower()
-                or "authentication" in result.stderr.lower()
+
+            # Log stderr for debugging regardless of error type
+            if result.stderr:
+                self.logger.debug(f"borg info stderr: {result.stderr.strip()}")
+
+            # Check for non-existent repo BEFORE passphrase errors
+            # (borg may mention encryption/passphrase even for missing repos)
+            if any(
+                msg in stderr_lower
+                for msg in [
+                    "does not exist",
+                    "not a valid repository",
+                    "no repository",
+                    "repository not found",
+                ]
             ):
+                self.logger.info("Repository does not exist, will initialize")
+                return False
+
+            # Check for SSH/connection errors
+            if any(
+                msg in stderr_lower
+                for msg in [
+                    "host key verification failed",
+                    "connection refused",
+                    "connection closed",
+                    "no route to host",
+                    "name or service not known",
+                ]
+            ):
+                raise ValueError(
+                    f"SSH connection failed: {result.stderr.strip()}"
+                )
+
+            # Now check for passphrase/auth errors (repo exists but can't open)
+            if "passphrase" in stderr_lower or "authentication" in stderr_lower:
                 if not self.config.passphrase:
                     raise ValueError(
                         "Repository exists but requires a passphrase. "
@@ -288,14 +325,13 @@ class BorgCommon:
                         "Repository exists but passphrase authentication failed. "
                         "Please check your 'borg_passphrase' configuration."
                     )
-            elif "does not exist" in result.stderr.lower() or result.returncode == 2:
-                # Repository doesn't exist, we can initialize it
-                self.logger.info("Repository does not exist, will initialize")
-                return False
-            else:
-                # Some other error
-                self.logger.warning(f"Repository check failed: {result.stderr}")
-                return False
+
+            # Unknown error
+            self.logger.warning(
+                f"Repository check failed (exit code {result.returncode}): "
+                f"{result.stderr.strip()}"
+            )
+            return False
 
         except subprocess.CalledProcessError as e:
             self.logger.warning(f"Could not check repository status: {e}")
@@ -401,6 +437,30 @@ class BorgCommon:
                 self.logger.warning(f"Failed to publish entity with {token_name}: {e}")
 
         return False
+
+    def publish_ssh_host_key(self):
+        """Publish accepted SSH host key fingerprint as a sensor."""
+        known_hosts = Path(self.config.ssh_known_hosts)
+        if not known_hosts.exists() or known_hosts.stat().st_size == 0:
+            return
+        try:
+            result = subprocess.run(
+                ["ssh-keygen", "-lf", str(known_hosts)],
+                capture_output=True, text=True, check=True,
+            )
+            fingerprint = result.stdout.strip()
+            self.logger.info(f"SSH host key fingerprint: {fingerprint}")
+            self.publish_entity(
+                "sensor.borg_backup_ssh_host_key",
+                fingerprint.split()[1] if " " in fingerprint else fingerprint,
+                {
+                    "friendly_name": "Borg Backup SSH Host Key",
+                    "icon": "mdi:key-chain",
+                    "full_output": fingerprint,
+                },
+            )
+        except Exception as e:
+            self.logger.debug(f"Could not read SSH host key fingerprint: {e}")
 
     def _get_repository_info(self) -> dict:
         """Get repository information for status entities."""

@@ -1,5 +1,5 @@
 name: "Borg Backup"
-version: "1.3.21"
+version: "1.3.24"
 slug: "borg-backup"
 description: "Secure and efficient backup solution using Borg Backup"
 url: "https://github.com/bmanojlovic/home-assistant-addons/borg-backup"
@@ -8,9 +8,6 @@ init: false
 arch:
   - aarch64
   - amd64
-  - armhf
-  - armv7
-  - i386
 startup: "services"
 boot: "manual"
 hassio_role: "manager"
