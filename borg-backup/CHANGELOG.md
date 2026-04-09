@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.4.0
+
+### Fixed
+- Fixed restore to properly repack extracted files into HA backup tar format
+- Fixed `borg extract` compatibility with Alpine (use cwd instead of --directory)
+- Fixed tar compatibility with BusyBox (no --use-compress-program)
+- Fixed Supervisor 404 on restore by reloading backup list before restore API call
+- Fixed `_check_repo_exists()` error detection order — checks for missing repo before passphrase errors
+- Fixed error messages in `_create_backup_via_api()` and `_create_borg_backup()` to include actual details
+
+### Added
+- Added `StrictHostKeyChecking=accept-new` for automatic SSH host key acceptance
+- Added `sensor.borg_backup_ssh_host_key` entity with server fingerprint
+- Added `error_type` attribute to `sensor.borg_backup_status` for error classification
+- Added `*/borg/cache/*` to standard backup exclusions
+
+### Changed
+- Migrated CI from deprecated `home-assistant/builder` to `docker/build-push-action` with QEMU
+- Dropped unsupported architectures: i386, armhf, armv7
+- Removed deprecated `codenotary` field from addon config
+- Updated docs with disaster recovery steps and SSH host key info
+
 ## 1.3.22
 
 ### Added

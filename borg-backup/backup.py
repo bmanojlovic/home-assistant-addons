@@ -376,6 +376,7 @@ class BorgBackup(BorgCommon):
             ".*.swp",
             ".*.swo",
             ".*.swn",
+            "*/borg/cache/*",
         ]
 
         # Add log exclusions if enabled

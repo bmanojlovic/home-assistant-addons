@@ -1,5 +1,5 @@
 name: "Borg Backup"
-version: "1.3.24"
+version: "1.4.0"
 slug: "borg-backup"
 description: "Secure and efficient backup solution using Borg Backup"
 url: "https://github.com/bmanojlovic/home-assistant-addons/borg-backup"
@@ -14,7 +14,6 @@ hassio_role: "manager"
 hassio_api: true
 homeassistant_api: true
 auth_api: true
-codenotary: "boris@steki.net"
 map:
   - homeassistant_config:rw
   - backup:rw

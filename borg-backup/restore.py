@@ -336,12 +336,10 @@ class BorgRestore(BorgCommon):
         if self.config.debug:
             cmd.append("--debug")
 
-        cmd.extend(
-            [f"{self.config.repo_url}::{archive_name}", "--directory", str(extract_dir)]
-        )
+        cmd.append(f"{self.config.repo_url}::{archive_name}")
 
         try:
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, check=True, cwd=str(extract_dir))
             self.logger.info(f"Successfully extracted backup to {extract_dir}")
             return extract_dir
         except subprocess.CalledProcessError as e:
@@ -349,26 +347,69 @@ class BorgRestore(BorgCommon):
             return None
 
     def restore_to_ha(self, extracted_path: Path):
-        """Restore the extracted backup to Home Assistant."""
-        # Find the backup file in the extracted directory
-        backup_files = list(extracted_path.glob("**/*.tar"))
-
-        if not backup_files:
-            self.logger.error("No backup files found in extracted directory")
+        """Repack extracted backup into HA format and restore via Supervisor API."""
+        # Find the backup.json to identify the backup root
+        backup_jsons = list(extracted_path.rglob("backup.json"))
+        if not backup_jsons:
+            self.logger.error("No backup.json found in extracted directory")
             return False
 
-        # Use the first backup file found
-        backup_file = backup_files[0]
-        self.logger.info(f"Found backup file: {backup_file}")
+        backup_dir = backup_jsons[0].parent
+        self.logger.info(f"Found backup at {backup_dir}")
 
-        # Copy the backup file to the /backup directory
-        target_file = Path("/backup") / backup_file.name
-        shutil.copy2(backup_file, target_file)
+        with open(backup_jsons[0], "r") as f:
+            backup_meta = json.load(f)
 
-        self.logger.info(f"Copied backup file to {target_file}")
+        slug = backup_meta["slug"]
 
-        # Restore the backup using the Supervisor API
-        return self._restore_via_api(target_file.stem)
+        # Re-tar.gz each component directory that was unpacked
+        for subdir in backup_dir.iterdir():
+            if not subdir.is_dir():
+                continue
+            # Skip plain folders (share, media, ssl, addons/local) — they go as-is in the tar
+            if subdir.name in ("share", "media", "ssl", "addons_local"):
+                continue
+            # This is a component (homeassistant, addon slug) — repack as .tar.gz
+            targz = backup_dir / f"{subdir.name}.tar.gz"
+            self.logger.info(f"Repacking {subdir.name} -> {targz.name}")
+            subprocess.run(
+                ["tar", "-czf", str(targz), "-C", str(subdir), "."],
+                check=True,
+            )
+            shutil.rmtree(subdir)
+
+        # Create the final {slug}.tar
+        target_tar = Path("/backup") / f"{slug}.tar"
+        self.logger.info(f"Creating {target_tar}")
+        subprocess.run(
+            ["tar", "-cf", str(target_tar), "-C", str(backup_dir), "."],
+            check=True,
+        )
+
+        self.logger.info(f"Backup repacked as {target_tar}")
+        self._reload_backups()
+        return self._restore_via_api(slug)
+
+    def _reload_backups(self):
+        """Tell Supervisor to rescan /backup for new tar files."""
+        for _, token_value in [
+            ("SUPERVISOR_TOKEN", os.environ.get("SUPERVISOR_TOKEN")),
+            ("HASSIO_TOKEN", os.environ.get("HASSIO_TOKEN")),
+        ]:
+            if not token_value:
+                continue
+            try:
+                resp = requests.post(
+                    "http://supervisor/backups/reload",
+                    headers={"Authorization": f"Bearer {token_value}"},
+                    timeout=30,
+                )
+                if resp.status_code == 200:
+                    self.logger.info("Supervisor backup list reloaded")
+                    return
+            except requests.RequestException:
+                pass
+        self.logger.warning("Could not reload backup list")
 
     def _restore_via_api(self, backup_slug: str) -> bool:
         """Restore a backup using the Supervisor API."""

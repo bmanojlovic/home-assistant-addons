@@ -57,6 +57,7 @@ borg_backup_debug: false  # Enable debug logging
 
 When first run, the addon will generate an SSH key and display it in the logs. You need to add this key to the `authorized_keys` file on your backup server.
 
+The SSH host key of your backup server is automatically accepted on first connection and published to `sensor.borg_backup_ssh_host_key` so you can verify it in your dashboard.
 
 Example log output:
 ```
@@ -65,6 +66,16 @@ Example log output:
 ssh-rsa AAAAB3N... root@local-borg-backup
 [INFO] ************ SNIP **********************
 ```
+
+### Disaster Recovery Note
+
+Your SSH private key is stored at `/config/borg/keys/borg_backup` and is included in HA backups automatically. When restoring to a **fresh** Home Assistant installation:
+
+1. Install the addon and configure your repo URL and passphrase
+2. The addon generates a **new** SSH key — add it to your backup server's `authorized_keys`
+3. Enable `restore_mode` and start the addon
+4. After restore completes, HA restarts with your old config (which contains the **old** SSH key)
+5. Either re-add the old key to your backup server, or delete `/config/borg/keys/` so the addon generates a fresh one on next run
 
 ## System Optimization
 
