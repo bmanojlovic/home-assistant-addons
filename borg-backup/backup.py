@@ -263,6 +263,7 @@ class BorgBackup(BorgCommon):
                 backup_data = {
                     "name": f"borg-{backup_time}",
                     "compressed": True,
+                    "location": None,
                 }
 
                 response = requests.post(

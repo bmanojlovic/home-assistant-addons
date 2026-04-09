@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1
+
+### Fixed
+- Force backup location to local `/backup/` to fix users with custom backup mounts (NFS, etc.)
+
 ## 1.4.0
 
 ### Fixed
