@@ -135,6 +135,8 @@ class BorgBackup(BorgCommon):
 
                 self.unpack_backup(snap_slug)
 
+                self._dump_sqlite_databases(snap_slug)
+
                 self.publish_entity(
                     "sensor.borg_backup_status",
                     "creating_borg_backup",
@@ -360,6 +362,27 @@ class BorgBackup(BorgCommon):
 
         subprocess.run(tar_cmd, check=True)
 
+    def _dump_sqlite_databases(self, snap_slug: str):
+        """Dump SQLite databases to .sql text for better deduplication."""
+        backup_path = Path(self.config.backup_dir) / snap_slug
+        for db_file in backup_path.rglob("*.db"):
+            sql_file = db_file.with_suffix(".sql")
+            try:
+                result = subprocess.run(
+                    ["sqlite3", str(db_file), ".dump"],
+                    capture_output=True, check=True,
+                )
+                sql_file.write_bytes(result.stdout)
+                db_file.unlink()
+                # Remove WAL/SHM files too
+                for ext in ("-wal", "-shm"):
+                    wal = db_file.with_name(db_file.name + ext)
+                    if wal.exists():
+                        wal.unlink()
+                self.logger.info(f"Dumped {db_file.name} to SQL ({sql_file.stat().st_size / 1e6:.1f} MB)")
+            except Exception as e:
+                self.logger.warning(f"Could not dump {db_file.name} to SQL, keeping binary: {e}")
+
     def _create_borg_backup(self, backup_time: str, snap_slug: str):
         cmd = [
             "borg",
@@ -378,6 +401,8 @@ class BorgBackup(BorgCommon):
             ".*.swo",
             ".*.swn",
             "*/borg/cache/*",
+            "*-wal",
+            "*-shm",
         ]
 
         # Add log exclusions if enabled

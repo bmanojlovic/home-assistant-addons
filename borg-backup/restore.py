@@ -325,6 +325,21 @@ class BorgRestore(BorgCommon):
 
         return None
 
+    def _restore_sqlite_databases(self, backup_dir: Path):
+        """Restore .sql dumps back to .db files."""
+        for sql_file in backup_dir.rglob("*.sql"):
+            db_file = sql_file.with_suffix(".db")
+            try:
+                with open(sql_file, "r") as f:
+                    subprocess.run(
+                        ["sqlite3", str(db_file)],
+                        stdin=f, check=True,
+                    )
+                sql_file.unlink()
+                self.logger.info(f"Restored {db_file.name} from SQL dump")
+            except Exception as e:
+                self.logger.warning(f"Could not restore {sql_file.name} to DB: {e}")
+
     def extract_from_borg(self, archive_name: str) -> Optional[Path]:
         """Extract a backup from Borg repository."""
         extract_dir = Path(self.config.backup_dir) / "restore"
@@ -361,6 +376,9 @@ class BorgRestore(BorgCommon):
             backup_meta = json.load(f)
 
         slug = backup_meta["slug"]
+
+        # Restore any .sql dumps back to .db files
+        self._restore_sqlite_databases(backup_dir)
 
         # Re-tar.gz each component directory that was unpacked
         for subdir in backup_dir.iterdir():

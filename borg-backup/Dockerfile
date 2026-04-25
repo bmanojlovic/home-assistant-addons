@@ -13,6 +13,7 @@ RUN apk add --no-cache \
         openssh-client \
         jq \
         pigz \
+        sqlite \
         python3 \
         py3-pip \
 	py3-psutil \
