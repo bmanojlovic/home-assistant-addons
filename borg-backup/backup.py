@@ -357,7 +357,7 @@ class BorgBackup(BorgCommon):
                 dirpath.chmod(dirpath.stat().st_mode | 0o700)
 
     def _extract_nested_archive(self, archive_path: Path, extract_dir: Path):
-        tar_cmd = ["tar"]
+        tar_cmd = ["tar", "--no-same-permissions"]
         if self.capabilities.use_parallel and shutil.which("pigz"):
             tar_cmd.extend(
                 [

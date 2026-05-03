@@ -1,9 +1,14 @@
 # Changelog
 
+## 1.5.2
+
+### Fixed
+- Fix tar extraction failing on addons with broken directory permissions (e.g., git-exporter)
+  by using `--no-same-permissions` flag
+
 ## 1.5.1
 
 ### Fixed
-- Fix extraction failure when addons store directories without execute permission (e.g., git-exporter)
 - Fix cleanup failure on permission-restricted files left from previous runs
 - Limit nested archive extraction to top-level components only
 
