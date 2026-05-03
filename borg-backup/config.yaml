@@ -1,5 +1,5 @@
 name: "Borg Backup"
-version: "1.5.2"
+version: "1.5.3"
 slug: "borg-backup"
 description: "Secure and efficient backup solution using Borg Backup"
 url: "https://github.com/bmanojlovic/home-assistant-addons/borg-backup"

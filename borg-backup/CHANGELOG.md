@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.3
+
+### Fixed
+- Use Python tarfile for nested archive extraction — fixes addons that store
+  directories without execute bit (git-exporter `chmod 644 -R`)
+
 ## 1.5.2
 
 ### Fixed

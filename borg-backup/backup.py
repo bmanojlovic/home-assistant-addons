@@ -344,30 +344,19 @@ class BorgBackup(BorgCommon):
 
             try:
                 self._extract_nested_archive(targz, extract_dir)
-                self._fix_directory_permissions(extract_dir)
                 targz.unlink()
             except Exception as e:
                 self.logger.error(f"Failed to extract nested archive {targz}: {e}")
                 raise
 
-    def _fix_directory_permissions(self, path: Path) -> None:
-        """Ensure all directories have u+x so they are traversable."""
-        for dirpath in path.rglob("*"):
-            if dirpath.is_dir():
-                dirpath.chmod(dirpath.stat().st_mode | 0o700)
-
     def _extract_nested_archive(self, archive_path: Path, extract_dir: Path):
-        tar_cmd = ["tar", "--no-same-permissions"]
-        if self.capabilities.use_parallel and shutil.which("pigz"):
-            tar_cmd.extend(
-                [
-                    "--use-compress-program",
-                    f"pigz -p {self.capabilities.compression_threads}",
-                ]
-            )
-        tar_cmd.extend(["-xf", str(archive_path), "-C", str(extract_dir)])
+        import tarfile
 
-        subprocess.run(tar_cmd, check=True)
+        with tarfile.open(str(archive_path), "r:*") as tf:
+            for member in tf:
+                if member.isdir():
+                    member.mode |= 0o700
+                tf.extract(member, extract_dir, set_attrs=True)
 
     def _dump_sqlite_databases(self, snap_slug: str):
         """Dump SQLite databases to .sql text for better deduplication."""
