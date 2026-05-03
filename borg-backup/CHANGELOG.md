@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.1
+
+### Fixed
+- Fix extraction failure when addons store directories without execute permission (e.g., git-exporter)
+- Fix cleanup failure on permission-restricted files left from previous runs
+- Limit nested archive extraction to top-level components only
+
 ## 1.4.1
 
 ### Fixed

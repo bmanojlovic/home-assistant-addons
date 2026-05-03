@@ -337,17 +337,24 @@ class BorgBackup(BorgCommon):
         return tar_cmd
 
     def _process_nested_archives(self, target_dir: Path) -> None:
-        """Process any nested archives found in the unpacked backup."""
-        for targz in target_dir.rglob("*.tar.gz"):
+        """Process top-level component archives in the unpacked backup."""
+        for targz in target_dir.glob("*.tar.gz"):
             extract_dir = targz.with_suffix("").with_suffix("")
             extract_dir.mkdir(parents=True, exist_ok=True)
 
             try:
                 self._extract_nested_archive(targz, extract_dir)
+                self._fix_directory_permissions(extract_dir)
                 targz.unlink()
             except Exception as e:
                 self.logger.error(f"Failed to extract nested archive {targz}: {e}")
                 raise
+
+    def _fix_directory_permissions(self, path: Path) -> None:
+        """Ensure all directories have u+x so they are traversable."""
+        for dirpath in path.rglob("*"):
+            if dirpath.is_dir():
+                dirpath.chmod(dirpath.stat().st_mode | 0o700)
 
     def _extract_nested_archive(self, archive_path: Path, extract_dir: Path):
         tar_cmd = ["tar"]
@@ -525,8 +532,12 @@ class BorgBackup(BorgCommon):
         raise RuntimeError("All API authentication methods failed for cleanup")
 
     def _cleanup_temp_files(self):
+        def _on_rm_error(func, path, exc_info):
+            os.chmod(path, 0o700)
+            func(path)
+
         try:
             if Path(self.config.backup_dir).exists():
-                shutil.rmtree(self.config.backup_dir)
+                shutil.rmtree(self.config.backup_dir, onerror=_on_rm_error)
         except Exception as e:
             self.logger.error(f"Failed to cleanup temporary files: {e}")
